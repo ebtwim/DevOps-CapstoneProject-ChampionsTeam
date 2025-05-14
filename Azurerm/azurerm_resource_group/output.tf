@@ -1,4 +1,9 @@
-output "resource_group" {
+output "name" {
+  description = "The name of the resource group"
+  value       = azurerm_resource_group.resource_group.name
+}
 
-    value = azurerm_resource_group.resource_group
+output "location" {
+  description = "The location of the resource group"
+  value       = azurerm_resource_group.resource_group.location
 }

@@ -18,7 +18,7 @@ module "vnet" {
 
   location = "East US"
 
-  resource_group_name = module.rg.resource_group.name
+  resource_group_name = module.rg.name
 
   address_space = local.vnet_address_space
 
@@ -32,7 +32,7 @@ module "subnet" {
 
   vnet_name = module.vnet.virtual_network.name
 
-  resource_group_name = module.rg.resource_group.name
+  resource_group_name = module.rg.name
 
   address_prefixes = local.subnet_address_prefixes
 
@@ -45,7 +45,7 @@ module "aks" {
 
   name = "${local.prefix}-aks"
 
-  resource_group_name = module.rg.resource_group.name
+  resource_group_name = module.rg.name
 
   location = "East US"
 
@@ -67,9 +67,9 @@ module "sql" {
 
   collation = local.sql_db.collation
 
-  resource_group_name = module.rg.resource_group.name
+  resource_group_name = module.rg.name
 
-  location = module.rg.resource_group.location
+  location            = module.rg.location
 
   username = local.sql_db.username
 
