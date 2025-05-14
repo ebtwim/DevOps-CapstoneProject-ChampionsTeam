@@ -4,7 +4,7 @@ Here is your updated documentation, formatted as a complete doc:
 
 # 3-Tier Kubernetes App on Azure (Terraform)
 
-This repository contains Terraform code to provision a **3-tier application architecture** on Azure, including:
+This repository contains Terraform code to provision a **Capstone-Project--Terraform** on Azure, including:
 
 * **Azure Kubernetes Service (AKS)**
 * **Azure SQL Database**
@@ -179,8 +179,8 @@ The remote state is already configured in `backend.tf` to use shared storage:
 ### Clone this repository:
 
 ```bash
-git clone https://github.com/YourUsername/3-tier-AKS-terraform.git
-cd 3-tier-AKS-terraform/terraform/solution
+git clone https://github.com/wejdann/Capstone-Project--Terraform.git
+cd Capstone-Project--Terraform/terraform/solution
 ```
 
 ### Run Terraform:
