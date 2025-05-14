@@ -1,0 +1,91 @@
+name: AKS Deployment Pipeline
+
+trigger:
+- main
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+stages:
+  - stage: Terraform_Deploy
+    displayName: "Terraform Deployment"
+    jobs:
+      - job: Terraform
+        displayName: "Terraform Init, Plan, and Apply"
+        steps:
+          - task: TerraformInstaller@0
+            displayName: "Install Terraform"
+            inputs:
+              terraformVersion: 'latest'
+
+          - script: |
+              echo "Initializing Terraform..."
+              cd solution
+              terraform init
+            displayName: "Terraform Init"
+
+          - script: |
+              echo "Planning Terraform..."
+              cd solution
+              terraform plan -out=tfplan
+            displayName: "Terraform Plan"
+
+          - script: |
+              echo "Applying Terraform..."
+              cd solution
+              terraform apply -auto-approve
+            displayName: "Terraform Apply"
+
+          - script: |
+              echo "Extracting Resource Group and AKS Cluster Name..."
+              cd solution
+              RESOURCE_GROUP=$(terraform output -raw resource_group_name)
+              AKS_CLUSTER=$(terraform output -raw aks_cluster_name)
+              echo "##vso[task.setvariable variable=RESOURCE_GROUP]$RESOURCE_GROUP"
+              echo "##vso[task.setvariable variable=AKS_CLUSTER]$AKS_CLUSTER"
+              echo "Resource Group: $RESOURCE_GROUP"
+              echo "AKS Cluster: $AKS_CLUSTER"
+            displayName: "Extract Cluster Info"
+            
+  - stage: Monitoring_Setup
+    displayName: "Prometheus and Grafana Setup"
+    dependsOn: Terraform_Deploy
+    jobs:
+      - job: Monitoring
+        displayName: "Install and Configure Monitoring"
+        steps:
+          - task: HelmInstaller@1
+            displayName: "Install Helm"
+            inputs:
+              helmVersion: 'latest'
+
+          - script: |
+              echo "Getting AKS credentials..."
+              az aks get-credentials --resource-group $(RESOURCE_GROUP) --name $(AKS_CLUSTER) --overwrite-existing
+
+              echo "Creating monitoring namespace..."
+              kubectl create namespace monitoring || echo "Namespace already exists"
+
+              echo "Adding Helm repos..."
+              helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
+              helm repo add grafana https://grafana.github.io/helm-charts
+              helm repo update
+
+              echo "Installing Prometheus..."
+              helm install prometheus prometheus-community/prometheus --namespace monitoring
+
+              echo "Installing Grafana..."
+              helm install grafana grafana/grafana --namespace monitoring
+
+              echo "Exposing Prometheus and Grafana..."
+              kubectl expose service prometheus-server --namespace monitoring --type=LoadBalancer --target-port=9090 --name=prometheus-server-ext
+              kubectl expose service grafana --namespace monitoring --type=LoadBalancer --target-port=3000 --name=grafana-ext
+
+              echo "Retrieving Prometheus and Grafana IPs..."
+              kubectl get services -n monitoring
+
+              echo "Retrieving Grafana Admin Password..."
+              GRAFANA_PASSWORD=$(kubectl get secret --namespace monitoring grafana -o jsonpath="{.data.admin-password}" | base64 --decode)
+              echo "##vso[task.setvariable variable=GRAFANA_PASSWORD;issecret=true]$GRAFANA_PASSWORD"
+              echo "Grafana Admin Password set as a secret variable."
+            displayName: "Configure Prometheus and Grafana"
