@@ -130,3 +130,11 @@ stages:
               echo "##vso[task.setvariable variable=GRAFANA_PASSWORD;issecret=true]$GRAFANA_PASSWORD"
               echo "Grafana Admin Password set as a secret variable."
             displayName: "Configure Prometheus and Grafana"
+
+          - script: |
+             echo "Getting Monitoring Services..."
+             kubectl get services -n monitoring
+
+             echo "Getting Grafana Admin Password..."
+             kubectl get secret --namespace monitoring grafana -o jsonpath="{.data.admin-password}" | base64 --decode
+            displayName: "Get Monitoring Services and Grafana Password"
