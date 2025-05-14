@@ -6,6 +6,7 @@ trigger:
 pool:
   vmImage: 'ubuntu-latest'
 
+
 stages:
   - stage: Backend_Setup
     displayName: "Backend Storage Setup"
@@ -44,39 +45,29 @@ stages:
             displayName: "Setup Terraform Backend"
 
   - stage: Terraform_Deploy
-    displayName: "Terraform Deployment"
+    dependsOn: Backend_Setup
     jobs:
-      - job: Terraform
-        displayName: "Terraform Init, Plan, and Apply"
+      - job: Deploy_Terraform
         steps:
           - task: TerraformInstaller@0
-            displayName: "Install Terraform"
             inputs:
               terraformVersion: 'latest'
-
-          - script: |
-              echo "Logging into Azure..."
-              az login --tenant 9b321bdd-83fe-4696-b371-5381bd4f0454
-            displayName: 'Azure Login'
-
-
+          
           - script: |
               echo "Initializing Terraform..."
-              cd solution
               terraform init
-            displayName: "Terraform Init"
-
+            displayName: 'Terraform Init'
+          
           - script: |
               echo "Planning Terraform..."
-              cd solution
               terraform plan -out=tfplan
-            displayName: "Terraform Plan"
-
+            displayName: 'Terraform Plan'
+          
           - script: |
               echo "Applying Terraform..."
-              cd solution
               terraform apply -auto-approve
-            displayName: "Terraform Apply"
+            displayName: 'Terraform Apply'
+
 
           - script: |
               echo "Extracting Resource Group and AKS Cluster Name..."
