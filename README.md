@@ -1,3 +1,7 @@
+Here is your updated documentation, formatted as a complete doc:
+
+---
+
 # 3-Tier Kubernetes App on Azure (Terraform)
 
 This repository contains Terraform code to provision a **3-tier application architecture** on Azure, including:
@@ -12,21 +16,21 @@ Team members collaborate on this code using **GitHub** for version control and *
 
 ## 📁 Project Structure
 
-```bash
+```
 terraform/
-├── Azurerm/                # Reusable Terraform modules for Azure resources
-│   ├── azurerm_aks          # Module to create an AKS cluster
+├── Azurerm/                             # Reusable Terraform modules for Azure resources
+│   ├── azurerm_aks                      # Module to create an AKS cluster
 │   ├── azurerm_mssql_virtual_network_rule  # SQL VNet rule
 │   ├── azurerm_resource_group
 │   ├── azurerm_sql_db
 │   ├── azurerm_subnets
 │   └── azurerm_virtual_network
-└── solution/               # Root Terraform project for this capstone
-    ├── backend.tf          # Remote state backend configuration
-    ├── local.tf            # Local variables (project prefix, location, etc.)
-    ├── main.tf             # Module instantiations
-    ├── output.tf           # Terraform outputs (kube_config, etc.)
-    └── providers.tf        # Provider and backend declarations
+└── solution/                            # Root Terraform project for this capstone
+    ├── backend.tf                       # Remote state backend configuration
+    ├── local.tf                         # Local variables (project prefix, location, etc.)
+    ├── main.tf                          # Module instantiations
+    ├── output.tf                        # Terraform outputs (kube_config, etc.)
+    └── providers.tf                     # Provider and backend declarations
 ```
 
 ---
@@ -44,41 +48,44 @@ terraform/
 
 To enable safe, collaborative Terraform workflows, this project uses a **remote backend** configured on **Azure Blob Storage**. Here's how it works:
 
-1. **Central State Storage**: Instead of storing `terraform.tfstate` locally on each machine, the state file is stored in an Azure Storage Account and Blob Container. This ensures:
+### 1. Central State Storage
 
-   * A single source of truth for your infrastructure state
-   * Prevention of conflicting changes
-   * History of state versions maintained by Azure
+Instead of storing `terraform.tfstate` locally on each machine, the state file is stored in an Azure Storage Account and Blob Container. This ensures:
 
-2. **Azure Resources for Remote State**:
+* A single source of truth for your infrastructure state
+* Prevention of conflicting changes
+* History of state versions maintained by Azure
 
-   * **Resource Group**: `DevOps1-tfstate-rg`
-   * **Storage Account**: `devopstfstatechamp` (globally unique)
-   * **Blob Container**: `tfstate`
+### 2. Azure Resources for Remote State
 
-3. **How Team Collaboration Works**:
+* **Resource Group**: `DevOps1-tfstate-rg`
+* **Storage Account**: `devopstfstatechamp` (globally unique)
+* **Blob Container**: `tfstate`
 
-   * All team members clone the GitHub repo containing the Terraform code and the `backend.tf` file.
-   * On first `terraform init`, Terraform reads the backend configuration and connects to the specified Storage Account and Container.
-   * Terraform downloads the current state into memory, locks it for exclusive writes, and uploads any changes back to the blob.
-   * Other team members automatically use the same state and cannot overwrite each other’s work.
+### 3. How Team Collaboration Works
 
-4. **No Extra Steps for Team Members**:
+* All team members clone the GitHub repo containing the Terraform code and the `backend.tf` file.
+* On first `terraform init`, Terraform reads the backend configuration and connects to the specified Storage Account and Container.
+* Terraform downloads the current state into memory, locks it for exclusive writes, and uploads any changes back to the blob.
+* Other team members automatically use the same state and cannot overwrite each other’s work.
 
-   * After one person creates the Storage Account and Container (manually or via Terraform), **everyone** only needs to run:
+### 4. No Extra Steps for Team Members
 
-     ```bash
-     terraform init
-     terraform plan
-     terraform apply
-     ```
-   * Terraform handles locking and unlocking the state behind the scenes.
+After one person creates the Storage Account and Container (manually or via Terraform), **everyone** only needs to run:
+
+```bash
+terraform init
+terraform plan
+terraform apply
+```
+
+Terraform handles locking and unlocking the state behind the scenes.
 
 ---
 
 ## 📝 Explanation of `backend.tf`
 
-The `backend.tf` file configures Terraform’s remote backend. Content:
+The `backend.tf` file configures Terraform’s remote backend.
 
 ```hcl
 terraform {
@@ -101,80 +108,89 @@ terraform {
 
 ## 🚀 Deployment Steps
 
-1. **Authenticate with Azure**:
+### 1. Authenticate with Azure
 
-   ```bash
-   az login
-   ```
+```bash
+az login
+```
 
-2. **Create Remote State Resources** (one-time):
+### 2. Create Remote State Resources (only one person does this once)
 
-   ```bash
-   az group create --name DevOps1-tfstate-rg --location "East US"
-   az storage account create --name devopstfstatechamp --resource-group DevOps1-tfstate-rg --location "East US" --sku Standard_LRS --kind StorageV2
-   az storage container create --name tfstate --account-name devopstfstatechamp --auth-mode login
-   ```
+```bash
+az group create --name DevOps1-tfstate-rg --location "East US"
+az storage account create --name devopstfstatechamp --resource-group DevOps1-tfstate-rg --location "East US" --sku Standard_LRS --kind StorageV2
+az storage container create --name tfstate --account-name devopstfstatechamp --auth-mode login
+```
 
-3. **Initialize Terraform**:
+### 3. Initialize Terraform
 
-   ```bash
-   cd terraform/solution
-   terraform init
-   ```
+```bash
+cd terraform/solution
+terraform init
+```
 
-   * Approve migration if prompted.
+> Approve migration if prompted.
 
-4. **Preview Infrastructure**:
+### 4. Preview Infrastructure
 
-   ```bash
-   terraform plan
-   ```
+```bash
+terraform plan
+```
 
-5. **Apply Changes**:
+### 5. Apply Changes
 
-   ```bash
-   terraform apply
-   ```
+```bash
+terraform apply
+```
 
-6. **Access AKS Cluster** (optional, for app deployment):
+### 6. Access AKS Cluster (optional for app deployment)
 
-   ```bash
-   # Backup existing kube config (optional)
-   mv ~/.kube/config ~/.kube/config_backup
+```bash
+# Backup existing kube config (optional)
+mv ~/.kube/config ~/.kube/config_backup
 
-   # Append the cluster config
-   terraform output kube_config >> ~/.kube/config
+# Append the cluster config from Terraform output
+terraform output kube_config >> ~/.kube/config
 
-   # Edit out the EOT markers if present
-   # Verify cluster access
-   kubectl get nodes
-   ```
+# Edit out the EOT markers if present (use a text editor)
+# Verify access to cluster
+kubectl get nodes
+```
 
 ---
 
-👥 Notes for Team Collaboration
-You do NOT need to create your own Azure Storage Account.
-The remote state is already configured in backend.tf to use shared storage:
-→ Storage Account: devopstfstatechamp
-→ Container: tfstate
+## 👥 Notes for Team Collaboration
 
-Make sure you:
+You do **NOT** need to create your own Azure Storage Account.
 
-Have access to the Azure subscription (ask the owner to assign you at least Contributor + Storage Blob Data Contributor roles).
+The remote state is already configured in `backend.tf` to use shared storage:
 
-Clone this repo:
+* Storage Account: `devopstfstatechamp`
+* Container: `tfstate`
 
-bash
-Copy
-Edit
+### Make sure you:
+
+* Have access to the Azure subscription.
+* Get assigned at least these roles:
+
+  * **Contributor**
+  * **Storage Blob Data Contributor**
+
+### Clone this repository:
+
+```bash
 git clone https://github.com/YourUsername/3-tier-AKS-terraform.git
 cd 3-tier-AKS-terraform/terraform/solution
-Run the usual Terraform commands:
+```
 
-bash
-Copy
-Edit
+### Run Terraform:
+
+```bash
 terraform init
 terraform plan
 terraform apply
+```
+
 Terraform handles remote state automatically. All changes are stored centrally to avoid conflicts.
+
+---
