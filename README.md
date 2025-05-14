@@ -152,3 +152,29 @@ terraform {
 
 ---
 
+👥 Notes for Team Collaboration
+You do NOT need to create your own Azure Storage Account.
+The remote state is already configured in backend.tf to use shared storage:
+→ Storage Account: devopstfstatechamp
+→ Container: tfstate
+
+Make sure you:
+
+Have access to the Azure subscription (ask the owner to assign you at least Contributor + Storage Blob Data Contributor roles).
+
+Clone this repo:
+
+bash
+Copy
+Edit
+git clone https://github.com/YourUsername/3-tier-AKS-terraform.git
+cd 3-tier-AKS-terraform/terraform/solution
+Run the usual Terraform commands:
+
+bash
+Copy
+Edit
+terraform init
+terraform plan
+terraform apply
+Terraform handles remote state automatically. All changes are stored centrally to avoid conflicts.
