@@ -1,0 +1,11 @@
+.terraform/
+*.tfstate
+*.tfstate.backup
+crash.log
+*.log
+*.tfvars
+*.tfvars.json
+*.backup
+terraform.tfstate*
+*.zip
+.kube/
