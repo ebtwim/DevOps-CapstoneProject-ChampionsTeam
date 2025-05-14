@@ -19,6 +19,12 @@ stages:
               terraformVersion: 'latest'
 
           - script: |
+              echo "Logging into Azure..."
+              az login --tenant 9b321bdd-83fe-4696-b371-5381bd4f0454
+            displayName: 'Azure Login'
+
+
+          - script: |
               echo "Initializing Terraform..."
               cd solution
               terraform init
