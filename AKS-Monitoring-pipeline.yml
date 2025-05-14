@@ -7,6 +7,42 @@ pool:
   vmImage: 'ubuntu-latest'
 
 stages:
+  - stage: Backend_Setup
+    displayName: "Backend Storage Setup"
+    jobs:
+      - job: Setup_Backend
+        steps:
+          - script: |
+              echo "Setting up Terraform Backend Storage..."
+              
+              RESOURCE_GROUP_NAME="DevOps1-tfstate-rg"
+              STORAGE_ACCOUNT_NAME="devopstfstatechamp"
+              CONTAINER_NAME="tfstate"
+              LOCATION="eastus"
+              
+              # Create Resource Group if not exists
+              az group create --name $RESOURCE_GROUP_NAME --location $LOCATION || echo "Resource group already exists"
+
+              # Create Storage Account if not exists
+              az storage account create \
+                --name $STORAGE_ACCOUNT_NAME \
+                --resource-group $RESOURCE_GROUP_NAME \
+                --location $LOCATION \
+                --sku Standard_LRS || echo "Storage account already exists"
+
+              # Create Blob Container if not exists
+              CONNECTION_STRING=$(az storage account show-connection-string \
+                --name $STORAGE_ACCOUNT_NAME \
+                --resource-group $RESOURCE_GROUP_NAME \
+                --query connectionString -o tsv)
+
+              az storage container create \
+                --name $CONTAINER_NAME \
+                --connection-string $CONNECTION_STRING || echo "Container already exists"
+
+              echo "Backend storage setup complete."
+            displayName: "Setup Terraform Backend"
+
   - stage: Terraform_Deploy
     displayName: "Terraform Deployment"
     jobs:
