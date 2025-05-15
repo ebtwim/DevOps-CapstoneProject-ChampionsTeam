@@ -52,6 +52,9 @@ trigger:
 pool:
   vmImage: 'ubuntu-latest'
 
+variables:
+  - group: AKS-Deployment-Vars
+
 stages:
   - stage: Terraform_Deploy
   # dependsOn: Backend_Setup
