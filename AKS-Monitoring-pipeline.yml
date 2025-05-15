@@ -72,6 +72,7 @@ stages:
           
           - script: |
              echo "Checking if Resource Group already exists..."
+             cd ./solution
              RESOURCE_GROUP_NAME=$(terraform output -raw resource_group_name || echo "NOT_FOUND")
 
               if az group show --name "$RESOURCE_GROUP_NAME" &> /dev/null; then
