@@ -1,13 +1,13 @@
-name: AKS Deployment Pipeline
+# name: AKS Deployment Pipeline
 
-trigger:
-- main
+# trigger:
+# - main
 
-pool:
-  vmImage: 'ubuntu-latest'
+# pool:
+#   vmImage: 'ubuntu-latest'
 
 
-stages:
+# stages:
   # - stage: Backend_Setup
   #   displayName: "Backend Storage Setup"
   #   jobs:
@@ -44,8 +44,17 @@ stages:
   #             echo "Backend storage setup complete."
   #           displayName: "Setup Terraform Backend"
 
+name: AKS Deployment Pipeline
+
+trigger:
+- main
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+stages:
   - stage: Terraform_Deploy
-    # dependsOn: Backend_Setup
+  # dependsOn: Backend_Setup
     jobs:
       - job: Deploy_Terraform
         steps:
@@ -71,30 +80,10 @@ stages:
             displayName: 'Terraform Plan'
           
           - script: |
-             echo "Checking if Resource Group already exists..."
-             cd solution
-             terraform apply -auto-approve
-            displayName: "Terraform Apply (with Resource Group Check)"
-
-          - script: |
-              echo "Extracting Resource Group and AKS Cluster Name..."
+              echo "Applying Terraform..."
               cd solution
-              RESOURCE_GROUP=$(terraform output -raw resource_group_name 2>/dev/null || echo "NOT_FOUND")
-              AKS_CLUSTER=$(terraform output -raw aks_cluster_name 2>/dev/null || echo "NOT_FOUND")
-    
-              if [ "$RESOURCE_GROUP" == "NOT_FOUND" ] || [ "$AKS_CLUSTER" == "NOT_FOUND" ]; then
-                echo "Error: Resource group or AKS cluster name not found."
-                exit 1
-              fi
-    
-              echo "Resource Group: $RESOURCE_GROUP"
-              echo "AKS Cluster: $AKS_CLUSTER"
-    
-              # Set these as pipeline variables for later stages
-              echo "##vso[task.setvariable variable=RESOURCE_GROUP]$RESOURCE_GROUP"
-              echo "##vso[task.setvariable variable=AKS_CLUSTER]$AKS_CLUSTER"
-            displayName: "Set Kubernetes Context"
-
+              terraform apply -auto-approve
+            displayName: "Terraform Apply"
 
   - stage: Monitoring_Setup
     displayName: "Prometheus and Grafana Setup"
@@ -110,7 +99,7 @@ stages:
 
           - script: |
               echo "Getting AKS credentials..."
-              az aks get-credentials --resource-group $(RESOURCE_GROUP) --name $(AKS_CLUSTER) --overwrite-existing
+              az aks get-credentials --resource-group DevOps1-CapstoneProject-abd-test-rg --name DevOps1-CapstoneProject-abd-test-aks --overwrite-existing
 
               echo "Creating monitoring namespace..."
               kubectl create namespace monitoring || echo "Namespace already exists"
@@ -140,9 +129,9 @@ stages:
             displayName: "Configure Prometheus and Grafana"
 
           - script: |
-              echo "Getting Monitoring Services..."
-              kubectl get services -n monitoring
+             echo "Getting Monitoring Services..."
+             kubectl get services -n monitoring
 
-              echo "Getting Grafana Admin Password..."
-              echo "$(GRAFANA_PASSWORD)"
+             echo "Getting Grafana Admin Password..."
+             kubectl get secret --namespace monitoring grafana -o jsonpath="{.data.admin-password}" | base64 --decode
             displayName: "Get Monitoring Services and Grafana Password"
