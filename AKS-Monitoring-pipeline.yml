@@ -57,7 +57,6 @@ variables:
 
 stages:
   - stage: Terraform_Deploy
-  # dependsOn: Backend_Setup
     jobs:
       - job: Deploy_Terraform
         steps:
@@ -94,8 +93,6 @@ stages:
   - stage: Monitoring_Setup
     displayName: "Prometheus and Grafana Setup"
     dependsOn: Terraform_Deploy
-
-    
     jobs:
       - job: Monitoring
         displayName: "Install and Configure Monitoring"
@@ -106,13 +103,12 @@ stages:
               helmVersion: 'latest'
 
           - script: |
-             echo "Logging into Azure..."
-             az login --service-principal \
-             --username $(AZURE_CLIENT_ID) \
-             --password $(AZURE_CLIENT_SECRET) \
-             --tenant $(AZURE_TENANT_ID)
+              echo "Logging into Azure..."
+              az login --service-principal \
+                --username $(AZURE_CLIENT_ID) \
+                --password $(AZURE_CLIENT_SECRET) \
+                --tenant $(AZURE_TENANT_ID)
             displayName: "Azure Login for Monitoring"
-
 
           - script: |
               echo "Getting AKS credentials..."
@@ -129,8 +125,13 @@ stages:
               echo "Installing Prometheus..."
               helm install prometheus prometheus-community/prometheus --namespace monitoring
 
-              echo "Installing Grafana..."
-              helm install grafana grafana/grafana --namespace monitoring
+              echo "Installing Grafana with fixed admin password..."
+              helm install grafana grafana/grafana \
+                --namespace monitoring \
+                --set adminUser=admin \
+                --set adminPassword=admin123 \
+                --set persistence.enabled=true \
+                --set persistence.size=10Gi
 
               echo "Exposing Prometheus and Grafana..."
               kubectl expose service prometheus-server --namespace monitoring --type=LoadBalancer --target-port=9090 --name=prometheus-server-ext
@@ -139,27 +140,25 @@ stages:
               echo "Retrieving Prometheus and Grafana IPs..."
               kubectl get services -n monitoring
 
-              echo "Retrieving Grafana Admin Password..."
-              GRAFANA_PASSWORD=$(kubectl get secret --namespace monitoring grafana -o jsonpath="{.data.admin-password}" | base64 --decode)
-              echo "##vso[task.setvariable variable=GRAFANA_PASSWORD;issecret=true]$GRAFANA_PASSWORD"
-              echo "Grafana Admin Password set as a secret variable."
+              echo "Grafana Admin Password: admin123"
             displayName: "Configure Prometheus and Grafana"
 
           - script: |
-             echo "Waiting for Grafana Admin Password..."
-             for j in {1..10}; do
-               GRAFANA_PASSWORD=$(kubectl get secret --namespace monitoring grafana -o jsonpath="{.data.admin-password}" | base64 --decode 2>/dev/null)
-      
-               if [ -n "$GRAFANA_PASSWORD" ]; then
-                echo "Grafana Admin Password: $GRAFANA_PASSWORD"
-                break
+             echo "Waiting for services to be ready..."
+             for i in {1..10}; do
+               echo "Checking services (Attempt $i/10)..."
+               kubectl get services -n monitoring
+               if kubectl get services -n monitoring | grep -q 'pending'; then
+                 echo "Services are still pending, waiting for 30 seconds..."
+                 sleep 30
                else
-                echo "Grafana password not ready yet, waiting for 10 seconds..."
-               sleep 10
+                 echo "Services are ready!"
+                 break
                fi
              done
- 
-             echo "Grafana Admin Password is now displayed."
-            displayName: "Get Monitoring Services and Grafana Password (Unmasked)"
 
+             echo "Getting Monitoring Services..."
+             kubectl get services -n monitoring
 
+             echo "Grafana Admin Password is 'admin123'"
+            displayName: "Get Monitoring Services and Grafana Password (Fixed Password)"
