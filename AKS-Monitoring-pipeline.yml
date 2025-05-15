@@ -80,13 +80,12 @@ stages:
           - script: |
               echo "Extracting Resource Group and AKS Cluster Name..."
               cd solution
-              RESOURCE_GROUP=$(terraform output -raw resource_group_name)
-              AKS_CLUSTER=$(terraform output -raw aks_cluster_name)
-              echo "##vso[task.setvariable variable=RESOURCE_GROUP]$RESOURCE_GROUP"
-              echo "##vso[task.setvariable variable=AKS_CLUSTER]$AKS_CLUSTER"
+              export RESOURCE_GROUP=$(terraform output -raw resource_group_name)
+              export AKS_CLUSTER=$(terraform output -raw aks_cluster_name)
               echo "Resource Group: $RESOURCE_GROUP"
               echo "AKS Cluster: $AKS_CLUSTER"
-            displayName: "Extract Cluster Info"
+              az aks get-credentials --resource-group "$RESOURCE_GROUP" --name "$AKS_CLUSTER" --overwrite-existing
+            displayName: "Set Kubernetes Context"
             
   - stage: Monitoring_Setup
     displayName: "Prometheus and Grafana Setup"
