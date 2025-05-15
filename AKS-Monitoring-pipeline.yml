@@ -150,6 +150,8 @@ stages:
               for i in {1..10}; do
                 echo "Checking services (Attempt $i/10)..."
                 kubectl get services -n monitoring
+                
+                # Check if any service is still pending
                 if kubectl get services -n monitoring | grep -q 'pending'; then
                   echo "Services are still pending, waiting for 30 seconds..."
                   sleep 30
@@ -162,6 +164,20 @@ stages:
               echo "Getting Monitoring Services..."
               kubectl get services -n monitoring
 
-              echo "Getting Grafana Admin Password..."
-              kubectl get secret --namespace monitoring grafana -o jsonpath="{.data.admin-password}" | base64 --decode
+              echo "Waiting for Grafana Admin Password..."
+              for j in {1..10}; do
+                GRAFANA_PASSWORD=$(kubectl get secret --namespace monitoring grafana -o jsonpath="{.data.admin-password}" | base64 --decode 2>/dev/null)
+                
+                if [ -n "$GRAFANA_PASSWORD" ]; then
+                  echo "Grafana Admin Password: $GRAFANA_PASSWORD"
+                  echo "##vso[task.setvariable variable=GRAFANA_PASSWORD;issecret=true]$GRAFANA_PASSWORD"
+                  break
+                else
+                  echo "Grafana password not ready yet, waiting for 10 seconds..."
+                  sleep 10
+                fi
+              done
+
+              echo "Grafana Admin Password is now set as a secret variable."
             displayName: "Get Monitoring Services and Grafana Password"
+
