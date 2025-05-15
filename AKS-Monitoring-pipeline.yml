@@ -64,7 +64,10 @@ stages:
 
           - script: |
               echo "Logging into Azure..."
-              az login --tenant 9b321bdd-83fe-4696-b371-5381bd4f0454
+              az login --service-principal \
+                --username $(AZURE_CLIENT_ID) \
+                --password $(AZURE_CLIENT_SECRET) \
+                --tenant $(AZURE_TENANT_ID)
             displayName: 'Azure Login'
           
           - script: |
