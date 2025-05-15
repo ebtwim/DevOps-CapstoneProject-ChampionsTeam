@@ -76,26 +76,25 @@ stages:
              terraform apply -auto-approve
             displayName: "Terraform Apply (with Resource Group Check)"
 
-
-
           - script: |
-             echo "Extracting Resource Group and AKS Cluster Name..."
-             cd solution
-             RESOURCE_GROUP=$(terraform output -raw resource_group_name || echo "NOT_FOUND")
-             AKS_CLUSTER=$(terraform output -raw aks_cluster_name || echo "NOT_FOUND")
+              echo "Extracting Resource Group and AKS Cluster Name..."
+              cd solution
+              export RESOURCE_GROUP=$(terraform output -raw resource_group_name 2>/dev/null || echo "NOT_FOUND")
+              export AKS_CLUSTER=$(terraform output -raw aks_cluster_name 2>/dev/null || echo "NOT_FOUND")
     
-             if [ "$RESOURCE_GROUP" == "NOT_FOUND" ] || [ "$AKS_CLUSTER" == "NOT_FOUND" ]; then
-             echo "Error: Resource group or AKS cluster name not found."
-             exit 1
-             fi
+              if [ "$RESOURCE_GROUP" == "NOT_FOUND" ] || [ "$AKS_CLUSTER" == "NOT_FOUND" ]; then
+                echo "Error: Resource group or AKS cluster name not found."
+                exit 1
+              fi
     
-             echo "Resource Group: $RESOURCE_GROUP"
-             echo "AKS Cluster: $AKS_CLUSTER"
+              echo "Resource Group: $RESOURCE_GROUP"
+              echo "AKS Cluster: $AKS_CLUSTER"
     
-             az aks get-credentials --resource-group "$RESOURCE_GROUP" --name "$AKS_CLUSTER" --overwrite-existing
+              az aks get-credentials --resource-group "$RESOURCE_GROUP" --name "$AKS_CLUSTER" --overwrite-existing
+              echo "##vso[task.setvariable variable=RESOURCE_GROUP]$RESOURCE_GROUP"
+              echo "##vso[task.setvariable variable=AKS_CLUSTER]$AKS_CLUSTER"
             displayName: "Set Kubernetes Context"
 
-            
   - stage: Monitoring_Setup
     displayName: "Prometheus and Grafana Setup"
     dependsOn: Terraform_Deploy
@@ -140,9 +139,9 @@ stages:
             displayName: "Configure Prometheus and Grafana"
 
           - script: |
-             echo "Getting Monitoring Services..."
-             kubectl get services -n monitoring
+              echo "Getting Monitoring Services..."
+              kubectl get services -n monitoring
 
-             echo "Getting Grafana Admin Password..."
-             kubectl get secret --namespace monitoring grafana -o jsonpath="{.data.admin-password}" | base64 --decode
+              echo "Getting Grafana Admin Password..."
+              echo "$(GRAFANA_PASSWORD)"
             displayName: "Get Monitoring Services and Grafana Password"
