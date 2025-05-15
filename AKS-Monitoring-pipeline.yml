@@ -146,9 +146,22 @@ stages:
             displayName: "Configure Prometheus and Grafana"
 
           - script: |
-             echo "Getting Monitoring Services..."
-             kubectl get services -n monitoring
+              echo "Waiting for services to be ready..."
+              for i in {1..10}; do
+                echo "Checking services (Attempt $i/10)..."
+                kubectl get services -n monitoring
+                if kubectl get services -n monitoring | grep -q 'pending'; then
+                  echo "Services are still pending, waiting for 30 seconds..."
+                  sleep 30
+                else
+                  echo "Services are ready!"
+                  break
+                fi
+              done
 
-             echo "Getting Grafana Admin Password..."
-             kubectl get secret --namespace monitoring grafana -o jsonpath="{.data.admin-password}" | base64 --decode
+              echo "Getting Monitoring Services..."
+              kubectl get services -n monitoring
+
+              echo "Getting Grafana Admin Password..."
+              kubectl get secret --namespace monitoring grafana -o jsonpath="{.data.admin-password}" | base64 --decode
             displayName: "Get Monitoring Services and Grafana Password"
