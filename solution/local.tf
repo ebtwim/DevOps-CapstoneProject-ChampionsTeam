@@ -2,7 +2,7 @@ locals {
 
  
   prefix                 = "DevOps1-CapstoneProject-abd-test" // don't foget to change it -------------------------------------
-  location               = "East US"
+  location               = "West US 2"
   default_node_pool_name = "sau"
 
   vnet_address_space = ["10.2.0.0/16"]
