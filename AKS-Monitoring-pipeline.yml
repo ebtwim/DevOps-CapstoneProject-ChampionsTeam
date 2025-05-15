@@ -94,6 +94,8 @@ stages:
   - stage: Monitoring_Setup
     displayName: "Prometheus and Grafana Setup"
     dependsOn: Terraform_Deploy
+
+    
     jobs:
       - job: Monitoring
         displayName: "Install and Configure Monitoring"
@@ -102,6 +104,15 @@ stages:
             displayName: "Install Helm"
             inputs:
               helmVersion: 'latest'
+
+          - script: |
+             echo "Logging into Azure..."
+             az login --service-principal \
+             --username $(AZURE_CLIENT_ID) \
+             --password $(AZURE_CLIENT_SECRET) \
+             --tenant $(AZURE_TENANT_ID)
+            displayName: "Azure Login for Monitoring"
+
 
           - script: |
               echo "Getting AKS credentials..."
