@@ -71,10 +71,17 @@ stages:
             displayName: 'Terraform Plan'
           
           - script: |
-              echo "Applying Terraform..."
-              cd solution
+             echo "Checking if Resource Group already exists..."
+             RESOURCE_GROUP_NAME=$(terraform output -raw resource_group_name || echo "NOT_FOUND")
+
+              if az group show --name "$RESOURCE_GROUP_NAME" &> /dev/null; then
+              echo "Resource Group $RESOURCE_GROUP_NAME already exists. Skipping Terraform apply."
+              else
+              echo "Resource Group not found. Running Terraform apply..."
               terraform apply -auto-approve
-            displayName: 'Terraform Apply'
+              fi
+            displayName: "Terraform Apply (with Resource Group Check)"
+
 
 
           - script: |
