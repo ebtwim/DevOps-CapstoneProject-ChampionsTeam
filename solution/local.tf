@@ -1,7 +1,7 @@
 locals {
 
  
-  prefix                 = "DevOps1-CapstoneProject-abd-test"
+  prefix                 = "DevOps1-CapstoneProject-abd-test" // don't foget to change it -------------------------------------
   location               = "East US"
   default_node_pool_name = "sau"
 

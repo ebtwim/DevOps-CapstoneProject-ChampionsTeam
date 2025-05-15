@@ -75,7 +75,7 @@ module "sql" {
 
   password = local.sql_db.password
 
-  server_name = "devops1sqlserver"
+  server_name = "devops1sqlserver-test" // don't foget to change it -------------------------------------
 
   server_version = local.sql_db.server_version
 
