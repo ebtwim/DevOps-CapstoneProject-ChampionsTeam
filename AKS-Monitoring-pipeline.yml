@@ -10,7 +10,7 @@ variables:
   - group: AKS-Deployment-Vars
 
 stages:
-  - stage: Terraform_Deploy
+  - stage: Terraform_Deploy  # First stage (for terraform)
     jobs:
       - job: Deploy_Terraform
         steps:
@@ -44,7 +44,7 @@ stages:
               terraform apply -auto-approve
             displayName: "Terraform Apply"
 
-  - stage: Monitoring_Setup
+  - stage: Monitoring_Setup  # second stage (for monitoring tools)
     displayName: "Prometheus and Grafana Setup"
     dependsOn: Terraform_Deploy
     jobs:
