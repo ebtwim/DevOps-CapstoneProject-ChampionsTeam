@@ -69,13 +69,13 @@ module "sql" {
 
   resource_group_name = module.rg.name
 
-  location            = module.rg.location
+  location = module.rg.location
 
   username = local.sql_db.username
 
   password = local.sql_db.password
 
-  server_name = "devops1sqlserver-test" // don't foget to change it -------------------------------------
+  server_name = "devops1-champions-sqlserver" 
 
   server_version = local.sql_db.server_version
 
@@ -103,5 +103,21 @@ module "mssql_virtual_network_rule" {
   server_id = module.sql.sql_server.id
 
   subnet_id = module.subnet.subnet.id
-  
+
+}
+
+# Create the storage account for the backend
+resource "azurerm_storage_account" "tfstate" {
+  name                     = "devops1champtesttfstate"
+  resource_group_name      = module.rg.name
+  location                 = module.rg.location
+  account_tier             = "Standard"
+  account_replication_type = "LRS"
+}
+
+# Create the storage container for the backend
+resource "azurerm_storage_container" "tfstate" {
+  name                  = "tfstate"
+  storage_account_id    = azurerm_storage_account.tfstate.id
+  container_access_type = "private"
 }
