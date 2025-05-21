@@ -1,0 +1,118 @@
+name: AKS Deployment Pipeline
+
+trigger:
+- main
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+variables:
+  - group: AKS-Deployment-Vars
+
+stages:
+  - stage: Terraform_Deploy  # First stage (for terraform)
+    jobs:
+      - job: Deploy_Terraform
+        steps:
+          - task: TerraformInstaller@0
+            inputs:
+              terraformVersion: 'latest'
+
+          - script: |
+              echo "Logging into Azure..."
+              az login --service-principal \
+                --username $(AZURE_CLIENT_ID) \
+                --password $(AZURE_CLIENT_SECRET) \
+                --tenant $(AZURE_TENANT_ID)
+            displayName: 'Azure Login'
+          
+          - script: |
+              echo "Initializing Terraform..."
+              cd solution
+              terraform init
+            displayName: 'Terraform Init'
+          
+          - script: |
+              echo "Planning Terraform..."
+              cd solution
+              terraform plan -out=tfplan
+            displayName: 'Terraform Plan'
+          
+          - script: |
+              echo "Applying Terraform..."
+              cd solution
+              terraform apply -auto-approve
+            displayName: "Terraform Apply"
+
+  - stage: Monitoring_Setup  # second stage (for monitoring tools)
+    displayName: "Prometheus and Grafana Setup"
+    dependsOn: Terraform_Deploy
+    jobs:
+      - job: Monitoring
+        displayName: "Install and Configure Monitoring"
+        steps:
+          - task: HelmInstaller@1
+            displayName: "Install Helm"
+            inputs:
+              helmVersion: 'latest'
+
+          - script: |
+              echo "Logging into Azure..."
+              az login --service-principal \
+                --username $(AZURE_CLIENT_ID) \
+                --password $(AZURE_CLIENT_SECRET) \
+                --tenant $(AZURE_TENANT_ID)
+            displayName: "Azure Login for Monitoring"
+
+          - script: |
+              echo "Getting AKS credentials..."
+              az aks get-credentials --resource-group DevOps1-CapstoneProject-champ-rg --name DevOps1-CapstoneProject-champ-aks --overwrite-existing
+
+              echo "Creating monitoring namespace..."
+              kubectl create namespace monitoring || echo "Namespace already exists"
+
+              echo "Adding Helm repos..."
+              helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
+              helm repo add grafana https://grafana.github.io/helm-charts
+              helm repo update
+
+              echo "Installing Prometheus..."
+              helm install prometheus prometheus-community/prometheus --namespace monitoring
+
+              echo "Installing Grafana with fixed admin password..."
+              helm install grafana grafana/grafana \
+                --namespace monitoring \
+                --set adminUser=admin \
+                --set adminPassword=admin123 \
+                --set persistence.enabled=true \
+                --set persistence.size=10Gi
+
+              echo "Exposing Prometheus and Grafana..."
+              kubectl expose service prometheus-server --namespace monitoring --type=LoadBalancer --target-port=9090 --name=prometheus-server-ext
+              kubectl expose service grafana --namespace monitoring --type=LoadBalancer --target-port=3000 --name=grafana-ext
+
+              echo "Retrieving Prometheus and Grafana IPs..."
+              kubectl get services -n monitoring
+
+              echo "Grafana Admin Password: admin123"
+            displayName: "Configure Prometheus and Grafana"
+
+          - script: |
+             echo "Waiting for services to be ready..."
+             for i in {1..10}; do
+               echo "Checking services (Attempt $i/10)..."
+               kubectl get services -n monitoring
+               if kubectl get services -n monitoring | grep -q 'pending'; then
+                 echo "Services are still pending, waiting for 30 seconds..."
+                 sleep 30
+               else
+                 echo "Services are ready!"
+                 break
+               fi
+             done
+
+             echo "Getting Monitoring Services..."
+             kubectl get services -n monitoring
+
+             echo "Grafana Admin Password is 'admin123'"
+            displayName: "Get Monitoring Services and Grafana Password (Fixed Password)"
